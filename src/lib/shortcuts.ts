@@ -1,0 +1,3 @@
+export type ShortcutActions={undo:()=>void;redo:()=>void;remove:()=>void;save:()=>void};
+export function handleEditorShortcut(e:KeyboardEvent,a:ShortcutActions){ const mod=e.ctrlKey||e.metaKey; if(mod&&e.key.toLowerCase()==="z"){e.preventDefault();e.shiftKey?a.redo():a.undo();return;} if(mod&&e.key.toLowerCase()==="y"){e.preventDefault();a.redo();return;} if(mod&&e.key.toLowerCase()==="s"){e.preventDefault();a.save();return;} if((e.key==="Delete"||e.key==="Backspace")&&!isInput(e.target)){e.preventDefault();a.remove();} }
+function isInput(t:EventTarget|null){return t instanceof HTMLInputElement||t instanceof HTMLTextAreaElement||t instanceof HTMLSelectElement;}
