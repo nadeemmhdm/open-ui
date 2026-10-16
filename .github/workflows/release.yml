@@ -1,0 +1,81 @@
+name: Release Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. v0.1.0-alpha.1
+        required: true
+      notes:
+        description: Release notes
+        required: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate updater signing secrets
+        shell: pwsh
+        run: |
+          if (-not "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}") { throw "Missing TAURI_SIGNING_PRIVATE_KEY" }
+          if (-not "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}") { throw "Missing TAURI_SIGNING_PRIVATE_KEY_PASSWORD" }
+      - name: Build signed Windows installers and updater artifacts
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run desktop:build
+      - name: Collect release files
+        id: collect
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
+          $msi = Get-ChildItem src-tauri/target/release/bundle/msi -Filter *.msi | Select-Object -First 1
+          $exeSig = Get-ChildItem src-tauri/target/release/bundle/nsis -Filter *.exe.sig | Select-Object -First 1
+          if (-not $exe -or -not $msi -or -not $exeSig) { throw "Required release artifacts missing" }
+          Copy-Item $exe.FullName Open.UI.Setup.exe
+          Copy-Item $msi.FullName Open.UI.Setup.msi
+          Copy-Item $exeSig.FullName Open.UI.Setup.exe.sig
+          "exe=$($exe.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+      - name: Generate latest.json from release notes
+        shell: pwsh
+        run: |
+          $tag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
+          $version = $tag.TrimStart('v')
+          $notes = if ("${{ github.event_name }}" -eq "workflow_dispatch") { @'
+          ${{ inputs.notes }}
+          '@ } else { "See GitHub release notes for $tag" }
+          $sig = Get-Content Open.UI.Setup.exe.sig -Raw
+          $url = "https://github.com/nadeemmhdm/open-ui/releases/download/$tag/Open.UI.Setup.exe"
+          $json = [ordered]@{
+            version = $version
+            notes = $notes
+            pub_date = (Get-Date).ToUniversalTime().ToString("o")
+            platforms = [ordered]@{
+              "windows-x86_64" = [ordered]@{ signature = $sig.Trim(); url = $url }
+            }
+          } | ConvertTo-Json -Depth 6
+          Set-Content latest.json $json
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          body: ${{ github.event_name == 'workflow_dispatch' && inputs.notes || '' }}
+          generate_release_notes: true
+          files: |
+            Open.UI.Setup.exe
+            Open.UI.Setup.msi
+            Open.UI.Setup.exe.sig
+            latest.json
