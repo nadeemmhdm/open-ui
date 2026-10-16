@@ -1,0 +1,4 @@
+import type { OpenUiNode } from "../types/document";
+export type SearchResult={id:string;name:string;type:string;text?:string};
+export function searchProject(root:OpenUiNode,query:string):SearchResult[]{const q=query.trim().toLowerCase();if(!q)return[];const out:SearchResult[]=[];const walk=(n:OpenUiNode)=>{const text=n.props.text??"";if(n.name.toLowerCase().includes(q)||n.type.includes(q)||text.toLowerCase().includes(q))out.push({id:n.id,name:n.name,type:n.type,text:text||undefined});n.children.forEach(walk)};walk(root);return out.slice(0,100)}
+export const commands=[{id:"save",label:"Save project",shortcut:"Ctrl+S"},{id:"undo",label:"Undo",shortcut:"Ctrl+Z"},{id:"redo",label:"Redo",shortcut:"Ctrl+Y"},{id:"duplicate",label:"Duplicate selection",shortcut:"Ctrl+D"},{id:"delete",label:"Delete selection",shortcut:"Delete"},{id:"snapshot",label:"Create snapshot"},{id:"problems",label:"Show diagnostics"},{id:"ai",label:"Open AI assistant"}] as const;
