@@ -1,0 +1,3 @@
+import type { OpenUiDocument,OpenUiNode } from "../types/document";
+export type IntegrityResult={ok:boolean;errors:string[]};
+export function validateDocumentIntegrity(document:OpenUiDocument):IntegrityResult{const errors:string[]=[],ids=new Set<string>();if(document.format!=="open-ui"||document.version!==1)errors.push("Unsupported document format");const walk=(node:OpenUiNode)=>{if(ids.has(node.id))errors.push(`Duplicate node id: ${node.id}`);ids.add(node.id);if(node.type==="page"&&node!==document.root)errors.push("Nested page nodes are not allowed");node.children.forEach(walk)};walk(document.root);if(document.root.type!=="page")errors.push("Root node must be a page");return{ok:errors.length===0,errors}}
