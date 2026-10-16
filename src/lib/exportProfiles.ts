@@ -1,0 +1,3 @@
+export type ExportProfileId="html-css"|"react-ts"|"nextjs"|"vue"|"flutter";
+export type ExportProfile={id:ExportProfileId;name:string;builtIn:boolean;available:boolean;description:string};
+export const exportProfiles:ExportProfile[]=[{id:"html-css",name:"HTML + CSS",builtIn:true,available:true,description:"Static standards-based export"},{id:"react-ts",name:"React + TypeScript",builtIn:true,available:true,description:"Typed React project export"},{id:"nextjs",name:"Next.js",builtIn:false,available:false,description:"Installable exporter"},{id:"vue",name:"Vue",builtIn:false,available:false,description:"Installable exporter"},{id:"flutter",name:"Flutter",builtIn:false,available:false,description:"Installable exporter"}];
