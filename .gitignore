@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+src-tauri/target/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.openui.recovery
