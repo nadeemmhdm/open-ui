@@ -1,0 +1,3 @@
+export type AiConfig={enabled:boolean;endpoint:string;model:string};
+export async function ollamaHealth(endpoint:string){ const r=await fetch(`${endpoint.replace(/\/$/,"")}/api/tags`); if(!r.ok) throw new Error(`Ollama unavailable (${r.status})`); return r.json() as Promise<{models?:{name:string}[]}>; }
+export async function askOllama(config:AiConfig,prompt:string){ if(!config.enabled) throw new Error("AI is disabled"); const r=await fetch(`${config.endpoint.replace(/\/$/,"")}/api/generate`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({model:config.model,prompt,stream:false})}); if(!r.ok) throw new Error(`AI request failed (${r.status})`); return r.json() as Promise<{response?:string}>; }
