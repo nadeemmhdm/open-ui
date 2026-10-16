@@ -1,0 +1,5 @@
+import type { OpenUiDocument } from "../types/document";
+import { createArchive,parseArchive,serializeArchive } from "./nativeProject";
+export type NativeProjectAdapter={open():Promise<{path:string;document:OpenUiDocument}|null>;saveAs(document:OpenUiDocument):Promise<string|null>;save(path:string,document:OpenUiDocument):Promise<void>};
+export type NativeBridge={pickOpenUi():Promise<string|null>;pickSaveOpenUi(suggestedName:string):Promise<string|null>;readText(path:string):Promise<string>;writeText(path:string,contents:string):Promise<void>};
+export function createNativeAdapter(bridge:NativeBridge):NativeProjectAdapter{return{async open(){const path=await bridge.pickOpenUi();if(!path)return null;const archive=parseArchive(await bridge.readText(path));return{path,document:archive.document}},async saveAs(document){const path=await bridge.pickSaveOpenUi(document.name);if(!path)return null;await bridge.writeText(path,serializeArchive(createArchive(document)));return path},async save(path,document){await bridge.writeText(path,serializeArchive(createArchive(document)))}}}
