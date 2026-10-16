@@ -1,0 +1,7 @@
+import { useState } from "react";
+import { Clock3,RotateCcw,Trash2,WandSparkles } from "lucide-react";
+import { createStarter,type StarterKind } from "../lib/projectWizard";
+import { deleteSnapshot,listSnapshots,restoreSnapshot } from "../lib/snapshots";
+import { useEditorStore } from "../store/editorStore";
+const starters:StarterKind[]=["blank","website","landing","dashboard","portfolio"];
+export function ProjectCenter(){const replaceDocument=useEditorStore(s=>s.replaceDocument),[snapshots,setSnapshots]=useState(listSnapshots);const create=(kind:StarterKind)=>replaceDocument(createStarter(kind));const restore=(id:string)=>{const doc=restoreSnapshot(id);if(doc)replaceDocument(doc)};return <div className="component-section"><div className="section-heading"><span>New project</span></div><div className="template-row">{starters.map(kind=><button key={kind} onClick={()=>create(kind)}><WandSparkles size={13}/>{kind}</button>)}</div><div className="section-heading"><span>Snapshots</span></div><div className="asset-list">{snapshots.length?snapshots.map(s=><div className="asset-item" key={s.id}><button onClick={()=>restore(s.id)}><RotateCcw size={14}/><span>{s.name}</span><small>{new Date(s.createdAt).toLocaleString()}</small></button><button aria-label={`Delete ${s.name}`} onClick={()=>{deleteSnapshot(s.id);setSnapshots(listSnapshots())}}><Trash2 size={13}/></button></div>):<small><Clock3 size={13}/> No snapshots yet.</small>}</div></div>}
