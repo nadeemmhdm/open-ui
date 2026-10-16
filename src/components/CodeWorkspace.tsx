@@ -1,0 +1,7 @@
+import { useEffect,useState } from "react";
+import { exportHtml } from "../lib/exporter";
+import { exportReact } from "../lib/exportReact";
+import { parseProject } from "../lib/project";
+import { useEditorStore } from "../store/editorStore";
+type Mode="document"|"react"|"html";
+export function CodeWorkspace(){const document=useEditorStore(s=>s.document),replaceDocument=useEditorStore(s=>s.replaceDocument),[mode,setMode]=useState<Mode>("document"),[source,setSource]=useState(()=>JSON.stringify(document,null,2)),[error,setError]=useState("");useEffect(()=>{if(mode==="document")setSource(JSON.stringify(document,null,2));else if(mode==="react")setSource(exportReact(document.root));else setSource(exportHtml(document.root))},[document,mode]);const apply=()=>{if(mode!=="document")return;try{replaceDocument(parseProject(source));setError("")}catch(e){setError(e instanceof Error?e.message:"Invalid Open UI document")}};return <div className="code-workspace"><div className="bottom-tabs"><button className={mode==="document"?"active":""} onClick={()=>setMode("document")}>Design JSON</button><button className={mode==="react"?"active":""} onClick={()=>setMode("react")}>React</button><button className={mode==="html"?"active":""} onClick={()=>setMode("html")}>HTML</button>{mode==="document"&&<button onClick={apply}>Apply to canvas</button>}</div>{error&&<div className="problem-list">{error}</div>}<textarea aria-label="Code workspace" spellCheck={false} value={source} readOnly={mode!=="document"} onChange={e=>setSource(e.target.value)}/></div>}
