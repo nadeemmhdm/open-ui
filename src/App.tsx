@@ -1,136 +1,50 @@
-import {
-  Box,
-  ChevronDown,
-  Code2,
-  Component,
-  Grid2X2,
-  Image,
-  Layers3,
-  Laptop,
-  MessageSquareText,
-  MousePointer2,
-  PanelBottom,
-  Play,
-  Plus,
-  Redo2,
-  Save,
-  Search,
-  Settings2,
-  Smartphone,
-  Sparkles,
-  Square,
-  Tablet,
-  Type,
-  Undo2,
-} from "lucide-react";
+import { Box, Code2, Component, Image, Laptop, Layers3, Plus, Redo2, Save, Smartphone, Tablet, Trash2, Type, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { NodeRenderer } from "./components/NodeRenderer";
+import { exportHtml } from "./lib/exporter";
+import { findNode } from "./lib/document";
+import { useEditorStore } from "./store/editorStore";
+import type { NodeType, OpenUiNode } from "./types/document";
 
 type Device = "desktop" | "tablet" | "mobile";
-type LeftTab = "components" | "layers" | "assets";
-
-const components = [
-  { name: "Frame", icon: Square },
-  { name: "Text", icon: Type },
-  { name: "Button", icon: Box },
-  { name: "Image", icon: Image },
-  { name: "Grid", icon: Grid2X2 },
-  { name: "Component", icon: Component },
+type LeftTab = "components" | "layers";
+const palette: { name: string; type: NodeType; icon: typeof Box }[] = [
+  { name: "Section", type: "section", icon: Component }, { name: "Text", type: "text", icon: Type },
+  { name: "Button", type: "button", icon: Box }, { name: "Image", type: "image", icon: Image },
 ];
 
 export function App() {
-  const [device, setDevice] = useState<Device>("desktop");
-  const [leftTab, setLeftTab] = useState<LeftTab>("components");
-  const [selected, setSelected] = useState("hero-button");
-  const [bottomOpen, setBottomOpen] = useState(true);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [zoom, setZoom] = useState(85);
+  const [device, setDevice] = useState<Device>("desktop"); const [leftTab, setLeftTab] = useState<LeftTab>("components"); const [zoom, setZoom] = useState(85);
+  const document = useEditorStore((s) => s.document); const selectedId = useEditorStore((s) => s.selectedId); const select = useEditorStore((s) => s.select);
+  const add = useEditorStore((s) => s.add); const removeSelected = useEditorStore((s) => s.removeSelected); const patchSelected = useEditorStore((s) => s.patchSelected); const patchStyle = useEditorStore((s) => s.patchStyle);
+  const undo = useEditorStore((s) => s.undo); const redo = useEditorStore((s) => s.redo); const past = useEditorStore((s) => s.past); const future = useEditorStore((s) => s.future);
+  const selected = selectedId ? findNode(document.root, selectedId) : undefined;
+  const canvasWidth = useMemo(() => ({ desktop: 1040, tablet: 760, mobile: 390 })[device], [device]);
+  const addTarget = selected && ["page", "section"].includes(selected.type) ? selected.id : document.root.id;
+  const saveProject = () => download(`${document.name.replace(/\s+/g, "-").toLowerCase()}.openui`, JSON.stringify(document, null, 2), "application/json");
+  const exportProject = () => download("open-ui-export.html", exportHtml(document.root), "text/html");
 
-  const canvasWidth = useMemo(
-    () => ({ desktop: 1040, tablet: 760, mobile: 390 })[device],
-    [device],
-  );
-
-  return (
-    <main className="app-shell">
-      <header className="titlebar">
-        <div className="brand"><span className="brand-mark"><Component size={17} /></span><strong>Open UI</strong><span className="alpha">ALPHA</span></div>
-        <div className="project-title"><span className="status-dot" /> Untitled project <ChevronDown size={14} /></div>
-        <div className="title-actions">
-          <button className="icon-button" title="Undo"><Undo2 size={16} /></button>
-          <button className="icon-button" title="Redo"><Redo2 size={16} /></button>
-          <span className="divider" />
-          <button className="toolbar-button"><Save size={15} /> Save</button>
-          <button className="toolbar-button"><Play size={15} /> Preview</button>
-          <button className="primary-button"><Code2 size={15} /> Export</button>
-        </div>
-      </header>
-
-      <section className="workspace">
-        <aside className="left-panel">
-          <nav className="panel-tabs">
-            <button className={leftTab === "components" ? "active" : ""} onClick={() => setLeftTab("components")}><Component size={16} />Components</button>
-            <button className={leftTab === "layers" ? "active" : ""} onClick={() => setLeftTab("layers")}><Layers3 size={16} />Layers</button>
-            <button className={leftTab === "assets" ? "active" : ""} onClick={() => setLeftTab("assets")}><Image size={16} />Assets</button>
-          </nav>
-          <div className="search"><Search size={15} /><input aria-label="Search panel" placeholder={`Search ${leftTab}`} /></div>
-          {leftTab === "components" && <div className="component-section">
-            <div className="section-heading"><span>Basics</span><button><Plus size={14} /></button></div>
-            <div className="component-grid">{components.map(({ name, icon: Icon }) => <button className="component-tile" key={name}><Icon size={20} /><span>{name}</span></button>)}</div>
-            <div className="section-heading"><span>Quick sections</span></div>
-            <button className="library-card"><div className="library-preview"><span /><span /><span /></div><div><strong>Hero section</strong><small>Responsive starter</small></div></button>
-          </div>}
-          {leftTab === "layers" && <div className="layer-list">
-            <button className="layer"><Layers3 size={14} /> Page</button>
-            <button className="layer indent"><Square size={14} /> Hero</button>
-            <button className="layer indent2"><Type size={14} /> Heading</button>
-            <button className={selected === "hero-button" ? "layer indent2 selected" : "layer indent2"} onClick={() => setSelected("hero-button")}><Box size={14} /> Primary CTA</button>
-          </div>}
-          {leftTab === "assets" && <div className="empty-state"><Image size={30} /><strong>Your assets</strong><span>Images and SVGs stay with your local project.</span><button className="secondary-button"><Plus size={15} /> Add asset</button></div>}
-          <div className="left-footer"><button><Settings2 size={16} /> Settings</button><span className="offline-pill">Local</span></div>
-        </aside>
-
-        <section className="editor-area">
-          <div className="canvas-toolbar">
-            <div className="tool-group"><button className="tool active" title="Select"><MousePointer2 size={16} /></button><button className="tool" title="Frame"><Square size={16} /></button><button className="tool" title="Text"><Type size={16} /></button></div>
-            <div className="device-switcher">
-              <button className={device === "desktop" ? "active" : ""} onClick={() => setDevice("desktop")} title="Desktop"><Laptop size={16} /></button>
-              <button className={device === "tablet" ? "active" : ""} onClick={() => setDevice("tablet")} title="Tablet"><Tablet size={16} /></button>
-              <button className={device === "mobile" ? "active" : ""} onClick={() => setDevice("mobile")} title="Mobile"><Smartphone size={16} /></button>
-            </div>
-            <div className="zoom"><button onClick={() => setZoom(Math.max(25, zoom - 10))}>−</button><span>{zoom}%</span><button onClick={() => setZoom(Math.min(200, zoom + 10))}>+</button></div>
-          </div>
-          <div className="canvas-stage">
-            <div className="artboard" style={{ width: canvasWidth, transform: `scale(${zoom / 100})` }}>
-              <div className="mock-nav"><strong>Northstar</strong><div><span>Product</span><span>Solutions</span><span>Pricing</span></div><button>Sign in</button></div>
-              <div className="mock-hero">
-                <span className="eyebrow">DESIGN WITHOUT LIMITS</span>
-                <h1>Build interfaces<br />at the speed of thought.</h1>
-                <p>Create polished, responsive products visually. Keep full control of every element and export clean source code.</p>
-                <div className="mock-actions"><button className={selected === "hero-button" ? "mock-primary selected-node" : "mock-primary"} onClick={() => setSelected("hero-button")}>Start building</button><button className="mock-secondary">Explore components</button></div>
-              </div>
-            </div>
-          </div>
-          {bottomOpen && <div className="bottom-panel"><div className="bottom-tabs"><button className="active"><Code2 size={14} /> Code</button><button><Undo2 size={14} /> History</button><button><PanelBottom size={14} /> Problems <span className="count">0</span></button><button className="close-bottom" onClick={() => setBottomOpen(false)}>×</button></div><pre><span className="muted">// Live document output</span>{"\n"}<span className="keyword">export function</span> Hero() &#123; <span className="keyword">return</span> &lt;section&gt;...&lt;/section&gt; &#125;</pre></div>}
-          {!bottomOpen && <button className="reopen-bottom" onClick={() => setBottomOpen(true)}><Code2 size={15} /> Code</button>}
-        </section>
-
-        <aside className="right-panel">
-          <div className="inspector-head"><div><small>BUTTON</small><strong>Primary CTA</strong></div><button className="icon-button"><Settings2 size={16} /></button></div>
-          <InspectorSection title="Layout"><div className="segmented"><button className="active">Flex</button><button>Grid</button><button>Block</button></div><div className="field-row"><label>W<input defaultValue="Auto" /></label><label>H<input defaultValue="44" /></label></div><div className="field-row"><label>X<input defaultValue="0" /></label><label>Y<input defaultValue="0" /></label></div></InspectorSection>
-          <InspectorSection title="Spacing"><div className="spacing-box"><span>12</span><div><span>20</span><b>Content</b><span>20</span></div><span>12</span></div></InspectorSection>
-          <InspectorSection title="Typography"><select defaultValue="Inter"><option>Inter</option><option>System UI</option></select><div className="field-row"><label>Size<input defaultValue="15" /></label><label>Weight<input defaultValue="600" /></label></div></InspectorSection>
-          <InspectorSection title="Fill"><div className="color-field"><span className="swatch" /><input defaultValue="#6C5CE7" /><span>100%</span></div></InspectorSection>
-          <InspectorSection title="Border & radius"><div className="field-row"><label>Radius<input defaultValue="10" /></label><label>Border<input defaultValue="0" /></label></div></InspectorSection>
-          <InspectorSection title="Accessibility"><label className="full-field">Accessible name<input defaultValue="Start building" /></label></InspectorSection>
-        </aside>
+  return <main className="app-shell">
+    <header className="titlebar"><div className="brand"><span className="brand-mark"><Component size={17}/></span><strong>Open UI</strong><span className="alpha">ALPHA</span></div><div className="project-title">{document.name}</div><div className="title-actions"><button className="icon-button" disabled={!past.length} onClick={undo}><Undo2 size={16}/></button><button className="icon-button" disabled={!future.length} onClick={redo}><Redo2 size={16}/></button><button className="toolbar-button" onClick={saveProject}><Save size={15}/> Save</button><button className="primary-button" onClick={exportProject}><Code2 size={15}/> Export HTML</button></div></header>
+    <section className="workspace">
+      <aside className="left-panel"><nav className="panel-tabs"><button className={leftTab === "components" ? "active" : ""} onClick={() => setLeftTab("components")}><Component size={16}/>Components</button><button className={leftTab === "layers" ? "active" : ""} onClick={() => setLeftTab("layers")}><Layers3 size={16}/>Layers</button></nav>
+        {leftTab === "components" ? <div className="component-section"><div className="section-heading"><span>Add to {selected?.name ?? "Page"}</span></div><div className="component-grid">{palette.map(({name,type,icon:Icon}) => <button className="component-tile" key={type} onClick={() => add(type, addTarget)}><Icon size={20}/><span>{name}</span></button>)}</div></div> : <div className="layer-list"><Layer node={document.root} depth={0}/></div>}
+        <div className="left-footer"><span className="offline-pill">LOCAL / OFFLINE</span></div>
+      </aside>
+      <section className="editor-area"><div className="canvas-toolbar"><div className="device-switcher"><button className={device === "desktop" ? "active" : ""} onClick={() => setDevice("desktop")}><Laptop size={16}/></button><button className={device === "tablet" ? "active" : ""} onClick={() => setDevice("tablet")}><Tablet size={16}/></button><button className={device === "mobile" ? "active" : ""} onClick={() => setDevice("mobile")}><Smartphone size={16}/></button></div><div className="zoom"><button onClick={() => setZoom(Math.max(25,zoom-10))}>−</button><span>{zoom}%</span><button onClick={() => setZoom(Math.min(200,zoom+10))}>+</button></div></div>
+        <div className="canvas-stage" onClick={() => select(document.root.id)}><div className="artboard" style={{width:canvasWidth, transform:`scale(${zoom/100})`, transformOrigin:"top center"}}><NodeRenderer node={document.root}/></div></div>
       </section>
-
-      <button className={aiOpen ? "ai-fab open" : "ai-fab"} onClick={() => setAiOpen(!aiOpen)}><Sparkles size={18} /><span>AI</span></button>
-      {aiOpen && <aside className="ai-panel"><header><div><Sparkles size={17} /><strong>Open UI AI</strong></div><span className="local-badge">LOCAL</span></header><div className="ai-body"><div className="ai-welcome"><MessageSquareText size={30} /><strong>Design with your local model</strong><p>Ask for a layout or select an element and describe a change. Proposed edits remain reviewable and undoable.</p></div></div><div className="ai-input"><textarea placeholder="e.g. Make this hero more minimal..." /><button><Sparkles size={16} /></button></div></aside>}
-    </main>
-  );
+      <aside className="right-panel">{selected ? <><div className="inspector-head"><div><small>{selected.type.toUpperCase()}</small><strong>{selected.name}</strong></div>{selected.type !== "page" && <button className="icon-button" onClick={removeSelected} title="Delete"><Trash2 size={16}/></button>}</div>
+        <InspectorSection title="Content"><label className="full-field">Layer name<input value={selected.name} onChange={(e)=>patchSelected({name:e.target.value})}/></label>{(selected.type === "text" || selected.type === "button") && <label className="full-field">Text<input value={selected.props.text ?? ""} onChange={(e)=>patchSelected({props:{...selected.props,text:e.target.value}})}/></label>}{selected.type === "image" && <><label className="full-field">Image URL<input value={selected.props.src ?? ""} onChange={(e)=>patchSelected({props:{...selected.props,src:e.target.value}})}/></label><label className="full-field">Alt text<input value={selected.props.alt ?? ""} onChange={(e)=>patchSelected({props:{...selected.props,alt:e.target.value}})}/></label></>}</InspectorSection>
+        <InspectorSection title="Layout"><div className="field-row"><Field label="Width" value={selected.style.width ?? ""} set={(v)=>patchStyle({width:v})}/><Field label="Height" value={selected.style.height ?? ""} set={(v)=>patchStyle({height:v})}/></div><div className="field-row"><Field label="Padding" value={selected.style.padding ?? ""} set={(v)=>patchStyle({padding:v})}/><Field label="Gap" value={selected.style.gap ?? ""} set={(v)=>patchStyle({gap:v})}/></div></InspectorSection>
+        <InspectorSection title="Appearance"><label className="full-field">Background<input value={selected.style.background ?? ""} placeholder="#ffffff" onChange={(e)=>patchStyle({background:e.target.value})}/></label><label className="full-field">Text color<input value={selected.style.color ?? ""} placeholder="#111827" onChange={(e)=>patchStyle({color:e.target.value})}/></label><div className="field-row"><Field label="Font size" value={selected.style.fontSize ?? ""} set={(v)=>patchStyle({fontSize:v})}/><Field label="Radius" value={selected.style.borderRadius ?? ""} set={(v)=>patchStyle({borderRadius:v})}/></div></InspectorSection>
+      </> : <div className="empty-state">Select an element</div>}</aside>
+    </section>
+  </main>;
 }
 
-function InspectorSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="inspector-section"><div className="section-heading"><span>{title}</span><button><Plus size={13} /></button></div>{children}</section>;
-}
+function Layer({node,depth}:{node:OpenUiNode;depth:number}) { const selectedId=useEditorStore((s)=>s.selectedId); const select=useEditorStore((s)=>s.select); return <>{<button className={selectedId===node.id?"layer selected":"layer"} style={{paddingLeft:12+depth*16}} onClick={()=>select(node.id)}><Layers3 size={14}/>{node.name}</button>}{node.children.map((child)=><Layer key={child.id} node={child} depth={depth+1}/>)}</>; }
+function Field({label,value,set}:{label:string;value:string;set:(v:string)=>void}) { return <label>{label}<input value={value} onChange={(e)=>set(e.target.value)}/></label>; }
+function InspectorSection({title,children}:{title:string;children:ReactNode}) { return <section className="inspector-section"><div className="section-heading"><span>{title}</span><Plus size={13}/></div>{children}</section>; }
+function download(name:string,content:string,type:string){ const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
