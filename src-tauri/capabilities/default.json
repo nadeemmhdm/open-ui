@@ -3,5 +3,8 @@
   "identifier": "default",
   "description": "Minimal capability set for the Open UI main editor window.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "updater:default"
+  ]
 }
