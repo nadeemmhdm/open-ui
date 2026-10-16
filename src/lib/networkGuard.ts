@@ -1,0 +1,3 @@
+import type { PrivacyState } from "./privacy";
+export function assertNetworkAllowed(state:PrivacyState,target:string){const url=new URL(target),loopback=url.hostname==="127.0.0.1"||url.hostname==="localhost";if(loopback)return;if(state.offlineMode)throw new Error("Offline Mode blocks remote network access");if(!state.cloudAiEnabled)throw new Error("Cloud network access is disabled")}
+export function normalizeOllamaBaseUrl(value:string){const url=new URL(value);if(!["http:","https:"].includes(url.protocol))throw new Error("Unsupported AI endpoint protocol");url.pathname=url.pathname.replace(/\/$/,"");return url.toString().replace(/\/$/,"")}
