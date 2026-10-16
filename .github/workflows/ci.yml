@@ -11,25 +11,30 @@ permissions:
 
 jobs:
   frontend:
+    name: Frontend verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm install
-      - run: npm run typecheck
-      - run: npm run build
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Type check
+        run: npm run typecheck
+      - name: Build frontend
+        run: npm run build
 
   windows-desktop:
+    name: Windows desktop verify
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - uses: dtolnay/rust-toolchain@stable
-      - run: npm install
-      - run: npm run desktop:build
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build Windows desktop app
+        run: npm run desktop:build
