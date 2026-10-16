@@ -1,0 +1,3 @@
+export const productionChecklist=["visual-editor-wired","native-open-save","openui-roundtrip","recovery-restore","ollama-local","ai-preview-apply-reject","cloud-ai-opt-in","os-credential-storage","offline-network-block","plugin-permission-gate","html-react-export","windows-msi-nsis","signed-artifacts","explicit-update-approval","security-audit","installer-smoke-test"] as const;
+export type ProductionCheck=typeof productionChecklist[number];
+export function missingProductionChecks(passed:Iterable<ProductionCheck>){const done=new Set(passed);return productionChecklist.filter(item=>!done.has(item))}
