@@ -1,6 +1,10 @@
-import type { NodeStyle, OpenUiNode } from "../types/document";
+import type { NodeStyle,OpenUiNode } from "../types/document";
 export type AlignMode="left"|"center"|"right"|"top"|"middle"|"bottom";
 export type DistributeMode="horizontal"|"vertical";
+export type Box={id:string;left:number;top:number;width:number;height:number};
 export function alignmentPatch(mode:AlignMode):Partial<NodeStyle>{if(mode==="left")return{textAlign:"left"};if(mode==="center"||mode==="middle")return{textAlign:"center"};if(mode==="right")return{textAlign:"right"};return{}}
 export function canDistribute(nodes:OpenUiNode[]){return nodes.length>=3}
 export function distributeOrder(nodes:OpenUiNode[],mode:DistributeMode){const key=mode==="horizontal"?"left":"top";return [...nodes].sort((a,b)=>parseFloat(a.style[key]??"0")-parseFloat(b.style[key]??"0"))}
+export function alignBoxes(boxes:Box[],mode:AlignMode):Record<string,Partial<NodeStyle>>{if(boxes.length<2)return{};const l=Math.min(...boxes.map(b=>b.left)),r=Math.max(...boxes.map(b=>b.left+b.width)),t=Math.min(...boxes.map(b=>b.top)),bt=Math.max(...boxes.map(b=>b.top+b.height)),cx=(l+r)/2,cy=(t+bt)/2;return Object.fromEntries(boxes.map(b=>[b.id,mode==="left"?{left:`${Math.round(l)}px`}:mode==="center"?{left:`${Math.round(cx-b.width/2)}px`}:mode==="right"?{left:`${Math.round(r-b.width)}px`}:mode==="top"?{top:`${Math.round(t)}px`}:mode==="middle"?{top:`${Math.round(cy-b.height/2)}px`}:{top:`${Math.round(bt-b.height)}px`}]))}
+export function distributeBoxes(boxes:Box[],axis:DistributeMode):Record<string,Partial<NodeStyle>>{if(boxes.length<3)return{};const horizontal=axis==="horizontal",sorted=[...boxes].sort((a,b)=>horizontal?a.left-b.left:a.top-b.top),start=horizontal?sorted[0].left:sorted[0].top,last=sorted.at(-1)!,end=horizontal?last.left+last.width:last.top+last.height,total=sorted.reduce((n,b)=>n+(horizontal?b.width:b.height),0),gap=(end-start-total)/(sorted.length-1);let cursor=start;const out:Record<string,Partial<NodeStyle>>={};for(const b of sorted){out[b.id]=horizontal?{left:`${Math.round(cursor)}px`}:{top:`${Math.round(cursor)}px`};cursor+=(horizontal?b.width:b.height)+gap}return out}
+export function snapValue(value:number,gridSize:number,enabled=true){if(!enabled)return value;const size=Math.max(1,Math.round(gridSize));return Math.round(value/size)*size}
