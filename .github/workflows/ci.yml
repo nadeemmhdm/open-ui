@@ -24,6 +24,13 @@ jobs:
         run: npm run typecheck
       - name: Build frontend
         run: npm run build
+      - name: Verify release security policy
+        shell: bash
+        run: |
+          grep -q "object-src 'none'" src-tauri/tauri.conf.json
+          grep -q "frame-src 'none'" src-tauri/tauri.conf.json
+          grep -q '"targets": \["msi", "nsis"\]' src-tauri/tauri.conf.json
+          test -f RELEASE.md
 
   windows-desktop:
     name: Windows desktop verify
@@ -38,3 +45,10 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build Windows desktop app
         run: npm run desktop:build
+      - name: Verify installer bundles
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem -Path src-tauri/target/release/bundle/msi -Filter *.msi -ErrorAction SilentlyContinue
+          $nsis = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe -ErrorAction SilentlyContinue
+          if (-not $msi) { throw "MSI bundle missing" }
+          if (-not $nsis) { throw "NSIS bundle missing" }
